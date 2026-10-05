@@ -32,15 +32,21 @@
       border: none;
       border-radius: 4px;
       cursor: pointer;
-      margin-left: 84px;
     }
     button:hover {
       background-color: #0056b3;
     }
+    .btn-action {
+      background-color: #28a745;
+      margin-top: 10px;
+    }
+    .btn-action:hover {
+      background-color: #218838;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 30px;
+      margin-top: 20px;
     }
     th, td {
       border: 1px solid #aaa;
@@ -67,6 +73,15 @@
   </div>
   <button id="btnTambah">Add</button>
 
+  <hr style="margin-top:25px;">
+
+  <!-- Tombol Backup Data -->
+  <div>
+    <button id="btnExport" class="btn-action">Download Backup Data</button>
+    <input type="file" id="inputImport" accept=".json" style="display:none;">
+    <button id="btnImport" class="btn-action" style="background-color: #6c757d;">Upload File Backup</button>
+  </div>
+
   <!-- Tabel Penampung Data -->
   <table>
     <thead>
@@ -76,7 +91,7 @@
       </tr>
     </thead>
     <tbody id="tabelData">
-      <!-- Data baru akan bertambah di sini -->
+      <!-- Data bertambah di sini -->
     </tbody>
   </table>
 
@@ -85,54 +100,75 @@
     const inputNim = document.getElementById('nim');
     const inputNama = document.getElementById('nama');
     const tabelData = document.getElementById('tabelData');
+    const btnExport = document.getElementById('btnExport');
+    const btnImport = document.getElementById('btnImport');
+    const inputImport = document.getElementById('inputImport');
 
-    // 1. Load data dari localStorage saat halaman dibuka
+    // 1. Load data saat halaman dibuka
     function muatData() {
       tabelData.innerHTML = '';
       const dataMahasiswa = JSON.parse(localStorage.getItem('dataMahasiswa')) || [];
-      dataMahasiswa.forEach(function(item) {
-        tambahBarisKeTabel(item.nim, item.nama);
-      });
+      dataMahasiswa.forEach(item => tambahBarisKeTabel(item.nim, item.nama));
     }
 
-    // 2. Fungsi menambahkan baris ke tabel
     function tambahBarisKeTabel(nim, nama) {
-      const trBaru = document.createElement('tr');
-
-      const tdNim = document.createElement('td');
-      tdNim.textContent = nim;
-
-      const tdNama = document.createElement('td');
-      tdNama.textContent = nama;
-
-      trBaru.appendChild(tdNim);
-      trBaru.appendChild(tdNama);
-
-      tabelData.appendChild(trBaru);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${nim}</td><td>${nama}</td>`;
+      tabelData.appendChild(tr);
     }
 
-    // Tampilkan data yang tersimpan saat pertama kali halaman dimuat
     muatData();
 
-    // 3. Simpan data baru ke localStorage saat tombol "Add" diklik
-    btnTambah.addEventListener('click', function() {
-      const nimValue = inputNim.value.trim();
-      const namaValue = inputNama.value.trim();
+    // 2. Tambah data baru
+    btnTambah.addEventListener('click', () => {
+      const nim = inputNim.value.trim();
+      const nama = inputNama.value.trim();
 
-      if (nimValue === '' || namaValue === '') {
-        alert('NIM dan Nama tidak boleh kosong!');
+      if (!nim || !nama) {
+        alert('NIM dan Nama wajib diisi!');
         return;
       }
 
       const dataMahasiswa = JSON.parse(localStorage.getItem('dataMahasiswa')) || [];
-      dataMahasiswa.push({ nim: nimValue, nama: namaValue });
+      dataMahasiswa.push({ nim, nama });
       localStorage.setItem('dataMahasiswa', JSON.stringify(dataMahasiswa));
 
-      tambahBarisKeTabel(nimValue, namaValue);
-
+      tambahBarisKeTabel(nim, nama);
       inputNim.value = '';
       inputNama.value = '';
       inputNim.focus();
+    });
+
+    // 3. Export Data ke File JSON
+    btnExport.addEventListener('click', () => {
+      const data = localStorage.getItem('dataMahasiswa') || '[]';
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'data_mahasiswa.json';
+      a.click();
+    });
+
+    // 4. Import Data dari File JSON
+    btnImport.addEventListener('click', () => inputImport.click());
+
+    inputImport.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const importedData = JSON.parse(event.target.result);
+          localStorage.setItem('dataMahasiswa', JSON.stringify(importedData));
+          muatData();
+          alert('Data berhasil dimuat!');
+        } catch (err) {
+          alert('Format file JSON tidak valid!');
+        }
+      };
+      reader.readAsText(file);
     });
   </script>
 
